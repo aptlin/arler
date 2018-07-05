@@ -56,12 +56,7 @@ class Taxi:
         if task.isPrimitive():
             return self.completionCost[task.id][state]
         else:
-            return max(
-                [
-                    self.computeCompositeReward(task, state, subtask)
-                    for subtask in task.subtasks()
-                ]
-            )
+            return max(self.taskCompositeRewards(task, state))
 
     def computeCompositeReward(
         self,
@@ -107,14 +102,13 @@ class Taxi:
         )
 
     def reset(
-        self,
-        env
+        self
     ):
-        self.domain = env
+        self.domain.reset()
         self.score = 0
         self.done = False
 
-    def run(
+    def step(
         self,
         task
     ):
@@ -173,7 +167,7 @@ class Taxi:
         state
     ):
         if task.isPrimitive():
-            reward = self.run(task)
+            reward = self.step(task)
             self.updateCompletionCostsWith(reward, task, state)
             return 1
         else:
@@ -202,3 +196,6 @@ class Taxi:
                 effort += nextTaskEffort
                 state = nextState
             return effort
+
+    def run(self):
+        return self.maxQ0(self.skillset.root, self.domain.s)
