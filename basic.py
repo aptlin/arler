@@ -10,12 +10,12 @@ import gym
 
 ENVIRONMENT = 'Taxi-v2'
 
-LEARNING_RATE = 0
+LEARNING_RATE = 0.1
 LEARNING_RATE_DECREMENT = 0.01
 DISCOUNT_FACTOR = 0.999
 EXPLORATION_RATE = 0.1
 
-EPISODES = 100
+EPISODES = 5000
 
 ROOT = 12
 
@@ -28,16 +28,14 @@ taxi = Agent.Taxi(env, LEARNING_RATE, DISCOUNT_FACTOR, EXPLORATION_RATE)
 for _ in range(EPISODES):
     env.reset()
     taxi.reset(env)
-    epochs = taxi.maxQ0(Agent.Task(ROOT), env.s, LEARNING_RATE_DECREMENT)
+    epochs = taxi.maxQ0(taxi.skillset.root, env.s)
     epochsSeries.append(epochs)
     scoresSeries.append(taxi.score)
-
-print(scoresSeries)
 print("Results after {} episodes:".format(EPISODES))
 print("\tAverage timesteps per episode: {}".format(sum(epochsSeries) / EPISODES))
 print("\tAverage score per episode: {}".format(sum(scoresSeries) / EPISODES))
 
-plt.scatter(range(EPISODES), scoresSeries)
-plt.xlabel("Episode")
-plt.ylabel("Total Reward")
+plt.plot(range(EPISODES), scoresSeries)
+plt.xlabel("Episodes")
+plt.ylabel("Cumulative Reward")
 plt.show()
