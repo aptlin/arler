@@ -1,19 +1,26 @@
-# This repo is under active development. If you find any slip-ups or want to contribute, please [let me know](mailto:sasha@sdll.space).
+# Arler: Toy Explorer of Hierarchical Reinforcement Learning
 
-# Hierarchy Induction via Models and Trajectories (HI-MAT)
+> This repo is under active development. If you find any slip-ups or want to contribute, please [let me know](mailto:sasha@sdll.space).
 
 ## Introduction
 
-Learning through play is a primitive and powerful form of making sense of the world. Whether animals or machines, learning agents are capable of sourcing information and engaging with the environment through exploration and exploitation, both of which can inflict significant costs. Universal public education and plastic pollution serve as examples of problems with a plethora of interacting agents and changing environments.
+Learning through play is a simple and powerful form of making sense of the world. Whether animals or machines, learning agents source information and engage with the environment, both of which can inflict significant costs.
 
-Scarcity of resources calls for a structured mode of building effective policies mapping situations to actions. Some domains offer natural quantifiable metrics of successful interaction: scores in games, grades in schools, wages, profits and impact in companies. _Reinforcement learning_ gives a set of methods to maximise a numerical reward signal. In a classical setting, no prior knowledge is available to the learner, who must discover an optimal policy on their own by trial and error, with immediate or delayed rewards.
+Resource scarcity calls for organised conjuring of effective policies that map situations to actions. Some domains offer obvious quantifiable metrics of successful interaction: scores in games, grades in schools, wages and profits in companies. _Reinforcement learning_ gives a range of methods to maximise the numerical reward.
 
-Some domains, such as task scheduling or travel planning, present an overwhelming range of options for exploration, and mandate the approach of _transfer learning_: breaking down the problem into essential components and training the agent in a simplified setting, with a promise of faster and cheaper discovery of the underlying structure. One insight worth pursuing is the idea that discovering and representing invariants characteristic of multiple domains will help determine sequences of actions necessary to achieve efficient planning and optimal modes of engagement. Often these sequences can be further organised into a hierarchy of distinct macros, which can then speed up the process of learning. Automating the process of finding optimal subroutines is the focus of this project.
+In a classical setting, no prior knowledge is available to the learner, who must discover optimal policies on their own by trial and error, with immediate or delayed rewards.
 
-Built upon the work of Neville Mehta _et al_ (see [[1]](https://ir.library.oregonstate.edu/downloads/6395wb334), [[2]](https://pdfs.semanticscholar.org/cb3a/ef8917900cea4492899bd1f724bcb5e98b8f.pdf)), our two key assumptions are:
+The sheer range of options available for discovery is often overwhelming, which mandates _transfer learning_: breaking the problem down into essential components and training the agent in a simpler context, with a promise of cheaper exploration and exploitation of the underlying structure.
 
-1. Any successful sequence of actions supplied with the knowledge of causal relationships can help uncover an optimal task hierarchy.
-2. Task hierarchies are more transferable across domains than knowledge pertaining to the value of being in a particular state or the utility of each action on its own.
+Invariants of multiple domains might make planning for optimal engagement more efficient, helping us build a hierarchy of routines that narrow down immediate view and speed up the process of learning.
+
+The primary focus of this project is to find and engage in optimal subroutines automatically.
+
+Following Neville Mehta _et al_ (see [[1]](https://ir.library.oregonstate.edu/downloads/6395wb334), [[2]](https://pdfs.semanticscholar.org/cb3a/ef8917900cea4492899bd1f724bcb5e98b8f.pdf)), we make three assumptions:
+
+1. Any sequence of actions that achieves the target goal has a well-defined reason that explains its success.
+2. Hints of causality uncover an optimal task hierarchy.
+3. Hierarchies are more transferrable across domains than flat sequences of actions.
 
 Exploitation of the action models encoding the environmental dynamics allows us to compose a task hierarchy with minimal causal dependencies between distinct tasks. The goal is to produce a meaningful schema to use for any targets with similar causal structures.
 
@@ -49,7 +56,9 @@ The left half of the graph consists of nodes corresponding to environment variab
 
 Successful abstraction of primitive tasks into more complex macros with greater time frames can speed up learning and break down intractable planning problems into manageable subtasks.
 
-##### MAXQ
+Task hierarchies need a tractable and lightweight representation, and the MAXQ framework provides one of them (see [[4]](https://pdfs.semanticscholar.org/fdc7/c1e10d935e4b648a32938f13368906864ab3.pdf) for details).
+
+In the MAXQ framework, the task-subtask relationships are represented as a directed acyclic graph. Leaves of this task graph correspond to primitive actions, while internal nodes correspond to composite tasks, each of which has the termination predicate describing what goal to achieve and what conditions it needs to succeed, as well as the set of environment variables to track.
 
 ### Causal Analysis & Relevance Annotation
 
@@ -67,13 +76,45 @@ Partitioning a RAT, you will get a hierarchy to feed into MAXQ.
 
 ### Overview
 
+We use the algorithm of hierarchy induction via models and trajectories (HI-MAT) to partition a RAT into candidate subtasks, given DBN action models and the MDP target goal as input.
+
+The algorithm proceeds backwards from the target goal. Processing each subgoal through the lens of action models, it parses preconditions and derives RAT segments of smaller size, merges them conditionally and recurses deeper down. The base case assumes a singleton RAT segment. The algorithm terminates when the RAT is a single action or a collection of action blocks with identical termination conditions and children, in which case resolution of any higher degree is assumed to lead to no new information-rich abstractions.
+
+| Input          | Output                            |
+| -------------- | --------------------------------- |
+| action models  | RAT partition to be fed into MAXQ |
+| RAT            |
+| goal predicate |
+
 ### Task Discovery
+
+The target predicate gives the initial set of variables to consider: the _goal set_. The algorithm looks at each literal inside and follows corresponding edges to determine segment boundaries using a simple iterative rule.
+
+If this segment is neither the state it has started with nor the entire trajectory, all the literals are added to the goal set. We do this check in order to prevent redundancy.
+
+If, however, it coincides with the entire trajectory, the ultimate action affects only one literal, so the algorithm splits the RAT in two: the first part includes parents of the ultimate action together with its preconditions (which determine the goal predicate of the segment), while the second contains only the ultimate action.
+
+The algorithm then goes on scanning until it accounts for all of the subgoal relevant variables, generating structured batches of sequential actions to feed into the MAXQ learning procedure.
 
 ### Specialisation & Termination
 
+A set of tasks combined with the termination condition define a composite task. The subtasks are determined by the next recursive call of the algorithm, while the termination condition is built from the predicate corresponding to the segment and the action model by picking out matching variables.
+
 ### Abstraction
 
+The algorithm attempts to find the smallest number of relevant environment variables corresponding to each task in order to speed up the learning process. The heuristic used to achieve this is as follows.
+
+First, we construct a composite action model by merging the DBNs of primitive actions contained in the corresponding RAT segment. This gives us the composite DBN of any task that combines these primitives.
+
+Secondly, we take the union of the set of relevant variables associated with the merged DBN and the set of variables comprising the termination predicate.
+
+Finally, if some of the variables involved in the relational termination condition of the task were left out, we add them as well. This, in effect, parametrises the task and makes it dependent on the context encoded in the current state.
+
 ### Generalisation
+
+Since the algorithm works with a single successful trajectory which might encode only a limited amount of information about the environment, in order to maximise the quality of transfer it verifies that all the useful primitive actions have been incorporated in the resultant hierarchy.
+
+The utility of a primitive action not in view is decided by checking whether its DBN is a subgraph of the merged DBN associated with primitive actions already in use. This heuristic is based on the assumption that unobserved primitives with familiar structures achieve the same goal as the primitive children of the task.
 
 ## Empirical Evaluation
 
@@ -85,16 +126,6 @@ Some combination of primary actions (go north, west, south, east, pick up, drop 
 
 Such tasks target a known conjunctive goal: there is a non-empty set of goals states, and the agent must reach them in the shortest period of time.
 
-Input:
-
-- action models
-- RAT
-- goal predicate
-
-Output:
-
-- RAT partition to be fed into MAXQ
-
 ## References
 
 1. Mehta, Neville. ["Hierarchical Structure Discovery and Transfer in Sequential Decision Problems"](https://ir.library.oregonstate.edu/downloads/6395wb334) (2011)
@@ -102,3 +133,5 @@ Output:
 2. Mehta, Neville; Ray, Soumya; Tadepalli, Prasad; Dietterich, Thomas. ["Automatic discovery and transfer of task hierarchies in reinforcement learning"](https://pdfs.semanticscholar.org/cb3a/ef8917900cea4492899bd1f724bcb5e98b8f.pdf) (2011)
 
 3. Sutton, Richard S.; Barto, Andrew G. ["Reinforcement Learning: An Introduction"](http://incompleteideas.net/book/bookdraft2017nov5.pdf) (2017)
+
+4. Dietterich, Thomas G. ["The MAXQ Method for Hierarchical Reinforcement Learning"](https://pdfs.semanticscholar.org/fdc7/c1e10d935e4b648a32938f13368906864ab3.pdf) (2000)
