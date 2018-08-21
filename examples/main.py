@@ -1,9 +1,5 @@
-import numpy as np
-
-from maxQ0 import Agent
-from maxQ0 import Manager
-
 import gym
+from arler.Taxi import Agent, Manager
 
 ENVIRONMENT = 'Taxi-v2'
 

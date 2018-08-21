@@ -15,10 +15,12 @@ class TaxiCallCentre:
         self.performance = []
 
     def retain(self):
-        np.savez(self.name,
-                 performance=self.performance,
-                 rewards=self.taxi.completionCost,
-                 discountedRewards=self.taxi.discountedCompletionCost)
+        np.savez(
+            self.name,
+            performance=self.performance,
+            rewards=self.taxi.completionCost,
+            discountedRewards=self.taxi.discountedCompletionCost,
+        )
 
     def recall(self):
         filename = "{}.npz".format(self.name)
@@ -38,10 +40,14 @@ class TaxiCallCentre:
         plt.xlabel("Episodes")
         plt.ylabel("Cumulative Reward")
         plt.plot(range(len(self.performance)), self.performance)
-        plt.savefig("{}-LR{}-DF{}-ER{}.png".format(self.name,
-                                                   self.taxi.learningRate,
-                                                   self.taxi.discountFactor,
-                                                   self.taxi.explorationRate))
+        plt.savefig(
+            "{}-LR{}-DF{}-ER{}.png".format(
+                self.name,
+                self.taxi.learningRate,
+                self.taxi.discountFactor,
+                self.taxi.explorationRate,
+            )
+        )
         plt.show(fig)
 
     def run(self, episodes):

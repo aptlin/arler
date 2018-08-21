@@ -3,15 +3,23 @@ import math
 import random
 from random import choice
 
+# Hard-coded ids of primitive actions
+
 SOUTH = 0
 NORTH = 1
 EAST = 2
 WEST = 3
+
+DIRECTIONS = [SOUTH, NORTH, EAST, WEST]
+
 PICKUP = 4
 DROPOFF = 5
 
+# Hard-coded ids of complex actions
+
 GET = 6
 PUT = 7
+
 GOTO_R = 8
 GOTO_G = 9
 GOTO_Y = 10
@@ -19,34 +27,36 @@ GOTO_B = 11
 
 ROOT = 12
 
-R, G, Y, B = (0, 0), (0, 4), (4, 0), (4, 3)
+# Hard-coded ids of corners
+
+COLOR_R = (0, 0)
+COLOR_G = (0, 4)
+COLOR_Y = (4, 0)
+COLOR_B = (4, 3)
+
+# Hard-coded collections
+
+CORNERS = [COLOR_R, COLOR_G, COLOR_Y, COLOR_B]
+GOTO_ACTIONS = [GOTO_R, GOTO_G, GOTO_Y, GOTO_B]
 
 DEFAULT_PRIMITIVE_ACTIONS = {SOUTH, NORTH, EAST, WEST, PICKUP, DROPOFF}
-GOTO = {GOTO_R, GOTO_G, GOTO_Y, GOTO_B}
+
+DO_MOVE = dict(zip(GOTO_ACTIONS, CORNERS))
 
 DEFAULT_HIERARCHY_STRUCTURE = {
     ROOT: [GET, PUT],
-    GET: [PICKUP, GOTO_R, GOTO_G, GOTO_Y, GOTO_B],
-    PUT: [DROPOFF, GOTO_R, GOTO_G, GOTO_Y, GOTO_B],
-    GOTO_R: [SOUTH, NORTH, EAST, WEST],
-    GOTO_G: [SOUTH, NORTH, EAST, WEST],
-    GOTO_Y: [SOUTH, NORTH, EAST, WEST],
-    GOTO_B: [SOUTH, NORTH, EAST, WEST]
+    GET: [PICKUP, *GOTO_ACTIONS],
+    PUT: [DROPOFF, *GOTO_ACTIONS],
+    **dict(zip(GOTO_ACTIONS, DIRECTIONS * 4)),
 }
 
 
 class Skill:
-    def __init__(
-        self,
-        identity,
-        skillset
-    ):
+    def __init__(self, identity, skillset):
         self.id = identity
         self.skillset = skillset
 
-    def isPrimitive(
-        self
-    ):
+    def isPrimitive(self):
         return self.id in self.skillset.primitives
 
     def isRoot(self):
@@ -64,38 +74,17 @@ class Skill:
         return data[0], data[1]
 
     def isInPosition(self):
-        if self.id == GOTO_R:
-            return self.position() == R
-        elif self.id == GOTO_G:
-            return self.position() == G
-        elif self.id == GOTO_Y:
-            return self.position() == Y
-        elif self.id == GOTO_B:
-            return self.position() == B
-        else:
-            return False
+        return self.id in DO_MOVE and self.position() == DO_MOVE[self.id]
 
     def isNotInPosition(self):
-        if self.id == GOTO_R:
-            return self.position() != R
-        elif self.id == GOTO_G:
-            return self.position() != G
-        elif self.id == GOTO_Y:
-            return self.position() != Y
-        elif self.id == GOTO_B:
-            return self.position() != B
-        else:
-            return False
+        return self.id in DO_MOVE and self.position() != DO_MOVE[self.id]
 
-    def subtasks(
-        self
-    ):
+    def subtasks(self):
         if self.isPrimitive():
             return []
         else:
             return [
-                Skill(subtaskId, self.skillset)
-                for subtaskId in self.skillset[self.id]
+                Skill(subtaskId, self.skillset) for subtaskId in self.skillset[self.id]
             ]
 
     def next(self, state, distribution, explorationRate):
@@ -103,8 +92,7 @@ class Skill:
             return choice(self.subtasks())
         else:
             assert len(distribution) == len(self.skillset[self.id])
-            return Skill(self.skillset[self.id][np.argmax(distribution)],
-                         self.skillset)
+            return Skill(self.skillset[self.id][np.argmax(distribution)], self.skillset)
 
 
 class SkillTree:
@@ -113,7 +101,7 @@ class SkillTree:
         env,
         structure=DEFAULT_HIERARCHY_STRUCTURE,
         root=ROOT,
-        primitives=DEFAULT_PRIMITIVE_ACTIONS
+        primitives=DEFAULT_PRIMITIVE_ACTIONS,
     ):
         self.domain = env
         self.root = Skill(root, self)
@@ -121,8 +109,5 @@ class SkillTree:
         self.primitives = primitives
         self.size = len(self.structure) + len(primitives)
 
-    def __getitem__(
-        self,
-        taskId
-    ):
+    def __getitem__(self, taskId):
         return self.structure[taskId]
