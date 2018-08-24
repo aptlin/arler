@@ -1,6 +1,6 @@
 import numpy as np
 import math
-from .Hierarchy import SkillTree
+from arler.Taxi.Hierarchy import SkillTree
 
 
 class Taxi:

@@ -107,7 +107,10 @@ class SkillTree:
         self.root = Skill(root, self)
         self.structure = structure
         self.primitives = primitives
-        self.size = len(self.structure) + len(primitives)
+
+    @property
+    def size(self):
+        return len(self.structure) + len(self.primitives)
 
     def __getitem__(self, taskId):
         return self.structure[taskId]
