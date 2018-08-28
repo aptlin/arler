@@ -82,15 +82,29 @@ The algorithm proceeds backwards from the target goal. Processing each subgoal t
 
 | Input          | Output                            |
 | -------------- | --------------------------------- |
-| action models  | RAT partition to be fed into MAXQ |
+| action models  | Root action of the task hierarchy |
 | RAT            |
 | goal predicate |
+
+| HI-MAT                                                                                                                                                                                                                                                                                    |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Base Case**                                                                                                                                                                                                                                                                             |
+| If the trajectory consists of a single action, then this action is the root node. The only relevant environment variables are the variables relevant to this action.                                                                                                                      |
+| If, on the other hand, actions in the trajectory have identical relevance, then bundle them together under the root node with the given goal predicate as termination condition and set relevant variables to the combination of relevant variables from the action models and predicate. |
+| If neither of the conditions above holds, partition the RAT into segments by figuring out the largest subgraph containing only the relevant variables inside.                                                                                                                             |
+| If some segment coincides with the entire trajectory, split it in two, separating the ultimate action from the rest.                                                                                                                                                                      |
+| Merge all overlapping segments into one.                                                                                                                                                                                                                                                  |
+| Invoke the algorithm recursively on each segment, and add the result to the returned root node.                                                                                                                                                                                           |
+| Set the termination condition for the root node to the goal predicate.                                                                                                                                                                                                                    |
+| Merge models of the actions present in the trajectory to make the composite model of the returned task.                                                                                                                                                                                   |
+| Add every primitive action with the model isomorphic to the subgraph of the composite model built in the previous step as a child of the returned task.                                                                                                                                   |
+| Return the root node.                                                                                                                                                                                                                                                                     |
 
 ### Task Discovery
 
 The target predicate gives the initial set of variables to consider: the _goal set_. The algorithm looks at each literal inside and follows corresponding edges to determine segment boundaries using a simple iterative rule.
 
-If this segment is neither the state it has started with nor the entire trajectory, all the literals are added to the goal set. We do this check in order to prevent redundancy.
+If this segment is neither the state it has started with nor the entire trajectory, all the literals entering the segment are added to the goal set. We do this check in order to prevent redundancy.
 
 If, however, it coincides with the entire trajectory, the ultimate action affects only one literal, so the algorithm splits the RAT in two: the first part includes parents of the ultimate action together with its preconditions (which determine the goal predicate of the segment), while the second contains only the ultimate action.
 
