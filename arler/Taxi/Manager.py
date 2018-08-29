@@ -1,3 +1,4 @@
+import os
 import numpy as np
 
 import matplotlib
@@ -5,7 +6,7 @@ import matplotlib.pyplot as plt
 
 from pathlib import Path
 
-from .Agent import Taxi
+from arler.Taxi.Agent import Taxi
 
 
 class TaxiCallCentre:
@@ -14,18 +15,22 @@ class TaxiCallCentre:
         self.taxi = taxi
         self.performance = []
 
-    def retain(self):
+    def modelPath(self, path):
+        filename = "{}.npz".format(self.name)
+        return os.path.join(path, filename)
+
+    def retain(self, path):
         np.savez(
-            self.name,
+            self.modelPath(path),
             performance=self.performance,
             rewards=self.taxi.completionCost,
             discountedRewards=self.taxi.discountedCompletionCost,
         )
 
-    def recall(self):
-        filename = "{}.npz".format(self.name)
-        if Path(filename).is_file():
-            memory = np.load(filename)
+    def recall(self, path):
+        modelPath = self.modelPath(path)
+        if Path(modelPath).is_file():
+            memory = np.load(modelPath)
             self.performance = memory["performance"]
             self.taxi.completionCost = memory["rewards"]
             self.taxi.discountedCompletionCost = memory["discountedRewards"]
@@ -35,26 +40,26 @@ class TaxiCallCentre:
         self.taxi.run()
         return self.taxi.score
 
-    def visualise(self):
+    def visualise(self, path):
+        filename = "{}-LR{}-DF{}-ER{}.png".format(
+            self.name,
+            self.taxi.learningRate,
+            self.taxi.discountFactor,
+            self.taxi.explorationRate,
+        )
+        figpath = os.path.join(path, filename)
         fig = plt.figure()
         plt.xlabel("Episodes")
         plt.ylabel("Cumulative Reward")
         plt.plot(range(len(self.performance)), self.performance)
-        plt.savefig(
-            "{}-LR{}-DF{}-ER{}.png".format(
-                self.name,
-                self.taxi.learningRate,
-                self.taxi.discountFactor,
-                self.taxi.explorationRate,
-            )
-        )
+        plt.savefig(figpath)
         plt.show(fig)
 
-    def run(self, episodes):
-        self.recall()
+    def run(self, modelsDir, imagesDir, episodes):
+        self.recall(modelsDir)
         extra = []
         for _ in range(episodes):
             extra.append(self.send())
         self.performance = np.append(self.performance, extra)
-        self.retain()
-        self.visualise()
+        self.retain(modelsDir)
+        self.visualise(imagesDir)

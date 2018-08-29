@@ -1,26 +1,21 @@
 import numpy as np
 import math
-from arler.Taxi.Hierarchy import SkillTree
 
 
 class Taxi:
-    def __init__(
-        self, env, learningRate, discountFactor, explorationRate, hierarchy=None
-    ):
+    def __init__(self, env, agenda, learningRate, discountFactor, explorationRate):
         self.domain = env
         self.learningRate = learningRate
         self.discountFactor = discountFactor
         self.explorationRate = explorationRate
-        self.skillset = self.inferSkillsFrom(hierarchy)
+        self.agenda = agenda
 
         self.score = 0
         self.done = False
-
-        self.completionCost = np.zeros(
-            (self.skillset.size, self.domain.observation_space.n)
-        )
+        numberOfTasks = self.agenda.size
+        self.completionCost = np.zeros((numberOfTasks, self.domain.observation_space.n))
         self.discountedCompletionCost = np.zeros(
-            (self.skillset.size, self.domain.observation_space.n, self.skillset.size)
+            (numberOfTasks, self.domain.observation_space.n, numberOfTasks)
         )
 
     @property
@@ -29,14 +24,8 @@ class Taxi:
         # https://github.com/openai/gym/blob/master/gym/envs/toy_text/taxi.py
         return list(self.domain.decode(self.domain.s))[2] == 4
 
-    def inferSkillsFrom(self, hierarchy):
-        if hierarchy is None:
-            return SkillTree(self.domain)
-        else:
-            return hierarchy
-
     def computeReward(self, task, state):
-        if task.isPrimitive():
+        if task.isPrimitive:
             return self.completionCost[task.id][state]
         else:
             return max(self.taskCompositeRewards(task, state))
@@ -68,38 +57,38 @@ class Taxi:
         self.done = False
 
     def step(self, task):
-        if not task.isPrimitive():
+        if not task.isPrimitive:
             raise ValueError("Not a primitive action, aborting.")
         _, reward, self.done, _ = self.domain.step(task.id)
         self.score += reward
         return reward
 
     def isTerminal(self, task):
-        if self.done or task.isPrimitive():
+        if self.done or task.isPrimitive:
             return True
-        elif task.isRoot():
+        elif task.id == self.agenda.root.id:
             return self.done
         elif task.isGetting():
             return self.loaded
         elif task.isDelivering():
             return not self.loaded
         else:
-            return task.isInPosition()
+            return self.agenda.hasArrived(task)
 
     def isBeneficial(self, task):
-        if task.isRoot():
+        if task.id == self.agenda.root.id:
             return not self.done
-        elif task.isPrimitive():
+        elif task.isPrimitive:
             return True
         elif task.isGetting():
             return not self.loaded
         elif task.isDelivering():
             return self.loaded
         else:
-            return task.isNotInPosition()
+            return self.agenda.hasNotArrived(task)
 
     def taskCompositeRewards(self, task, state):
-        subtasks = task.subtasks()
+        subtasks = self.agenda.subtasks(task)
         series = np.full((len(subtasks), 1), -math.inf)
         for idx in range(len(subtasks)):
             if self.isBeneficial(subtasks[idx]):
@@ -107,15 +96,15 @@ class Taxi:
         return series
 
     def maxQ0(self, task, state):
-        if task.isPrimitive():
+        if task.isPrimitive:
             reward = self.step(task)
             self.updateCompletionCostsWith(reward, task, state)
             return 1
         else:
             effort = 0
             while not self.isTerminal(task):
-                nextTask = task.next(
-                    state, self.taskCompositeRewards(task, state), self.explorationRate
+                nextTask = self.agenda.next(
+                    task, self.taskCompositeRewards(task, state), self.explorationRate
                 )
                 nextTaskEffort = self.maxQ0(nextTask, state)
                 nextState = self.domain.s
@@ -131,4 +120,4 @@ class Taxi:
             return effort
 
     def run(self):
-        return self.maxQ0(self.skillset.root, self.domain.s)
+        return self.maxQ0(self.agenda.root, self.domain.s)

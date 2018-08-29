@@ -91,6 +91,7 @@ The algorithm proceeds backwards from the target goal. Processing each subgoal t
 | **Base Case**                                                                                                                                                                                                                                                                             |
 | If the trajectory consists of a single action, then this action is the root node. The only relevant environment variables are the variables relevant to this action.                                                                                                                      |
 | If, on the other hand, actions in the trajectory have identical relevance, then bundle them together under the root node with the given goal predicate as termination condition and set relevant variables to the combination of relevant variables from the action models and predicate. |
+| **Recursive Step**                                                                                                                                                                                                                                                                        |
 | If neither of the conditions above holds, partition the RAT into segments by figuring out the largest subgraph containing only the relevant variables inside.                                                                                                                             |
 | If some segment coincides with the entire trajectory, split it in two, separating the ultimate action from the rest.                                                                                                                                                                      |
 | Merge all overlapping segments into one.                                                                                                                                                                                                                                                  |
@@ -131,6 +132,8 @@ Since the algorithm works with a single successful trajectory which might encode
 The utility of a primitive action not in view is decided by checking whether its DBN is a subgraph of the merged DBN associated with primitive actions already in use. This heuristic is based on the assumption that unobserved primitives with familiar structures achieve the same goal as the primitive children of the task.
 
 ## Empirical Evaluation
+
+![MAXQ & Custom Hierarchy](assets/images/Taxi-v2-LR0.1-DF0.999-ER0.1.png)
 
 ## Conclusion
 
