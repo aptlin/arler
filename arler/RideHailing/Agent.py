@@ -85,7 +85,7 @@ class Taxi:
         elif task.isDelivering():
             return self.loaded
         else:
-            return self.agenda.hasNotArrived(task)
+            return not self.agenda.hasArrived(task)
 
     def taskCompositeRewards(self, task, state):
         subtasks = self.agenda.subtasks(task)

@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 from pathlib import Path
 
-from arler.Taxi.Agent import Taxi
+from arler.RideHailing.Agent import Taxi
 
 
 class TaxiCallCentre:

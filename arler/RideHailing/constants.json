@@ -1,0 +1,62 @@
+{
+  "primitives": {
+    "navigation": {
+      "SOUTH": 0,
+      "NORTH": 1,
+      "EAST": 2,
+      "WEST": 3
+    },
+    "service": {
+      "PICKUP": 4,
+      "DROPOFF": 5
+    }
+  },
+  "corners": {
+    "GOTO_R": [0, 0],
+    "GOTO_G": [0, 4],
+    "GOTO_Y": [4, 0],
+    "GOTO_B": [4, 3]
+  },
+  "trajectory": {
+    "START": {
+      "GO_TO_PASSENGER_AT_R": { "variables": ["taxi location"] },
+      "GO_TO_PASSENGER_AT_G": { "variables": ["taxi location"] },
+      "GO_TO_PASSENGER_AT_B": { "variables": ["taxi location"] },
+      "GO_TO_PASSENGER_AT_Y": { "variables": ["taxi location"] },
+      "PICKUP": { "variables": ["passenger location"] },
+      "DROPOFF": { "variables": ["passenger destination"] }
+    },
+    "GO_TO_PASSENGER_AT_R": { "PICKUP": { "variables": ["taxi location"] } },
+    "GO_TO_PASSENGER_AT_G": { "PICKUP": { "variables": ["taxi location"] } },
+    "GO_TO_PASSENGER_AT_B": { "PICKUP": { "variables": ["taxi location"] } },
+    "GO_TO_PASSENGER_AT_Y": { "PICKUP": { "variables": ["taxi location"] } },
+    "PICKUP": {
+      "DROPOFF": { "variables": ["passenger location"] },
+      "GO_WITH_PASSENGER_TO_R": { "variables": ["taxi location"] },
+      "GO_WITH_PASSENGER_TO_G": { "variables": ["taxi location"] },
+      "GO_WITH_PASSENGER_TO_B": { "variables": ["taxi location"] },
+      "GO_WITH_PASSENGER_TO_Y": { "variables": ["taxi location"] }
+    },
+    "GO_WITH_PASSENGER_TO_R": {
+      "DROPOFF": { "variables": ["taxi location"] }
+    },
+    "GO_WITH_PASSENGER_TO_G": {
+      "DROPOFF": { "variables": ["taxi location"] }
+    },
+    "GO_WITH_PASSENGER_TO_B": {
+      "DROPOFF": { "variables": ["taxi location"] }
+    },
+    "GO_WITH_PASSENGER_TO_Y": {
+      "DROPOFF": { "variables": ["taxi location"] }
+    },
+    "DROPOFF": {
+      "END": {
+        "variables": [
+          "taxi location",
+          "passenger location",
+          "passenger destination"
+        ]
+      }
+    }
+  }
+}

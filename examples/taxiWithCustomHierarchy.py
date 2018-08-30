@@ -1,8 +1,8 @@
 import gym
 import os
-from arler.Taxi import Agent, Manager
-from arler.Taxi.settings import Configuration
-from arler.Taxi.Routing import Instructions
+from arler.RideHailing import Agent, Manager
+from arler.RideHailing.Director import Configuration
+from arler.RideHailing.Router import Instructions
 
 ENVIRONMENT = "Taxi-v2"
 

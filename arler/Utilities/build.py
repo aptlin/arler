@@ -1,10 +1,11 @@
 from collections.abc import Mapping
+from collections import defaultdict
 import networkx as nx
 
 
-def __saveTask(TaskClass, memory, taskName):
-    if taskName not in memory:
-        memory[taskName] = TaskClass(taskName)
+def __saveNamedObject(ObjectClass, memory, objectName):
+    if objectName not in memory:
+        memory[objectName] = ObjectClass(objectName)
 
 
 def buildPriorities(blueprint, Task):
@@ -17,9 +18,9 @@ def buildPriorities(blueprint, Task):
     primitiveIds = set()
     while flattenedBlueprint:
         parent, childLayer = flattenedBlueprint.pop()
-        __saveTask(Task, taskMemory, parent)
+        __saveNamedObject(Task, taskMemory, parent)
         for child, grandchildLayer in childLayer.items():
-            __saveTask(Task, taskMemory, child)
+            __saveNamedObject(Task, taskMemory, child)
             if isinstance(grandchildLayer, Mapping):
                 flattenedBlueprint.append((child, grandchildLayer))
             else:
@@ -34,5 +35,13 @@ def buildPriorities(blueprint, Task):
     return hierarchy
 
 
-def buildTrajectory(blueprint):
-    return nx.DiGraph(blueprint)
+def buildScaffold(blueprint, componentClass):
+    hasUsed = dict()
+    scaffold = nx.DiGraph()
+    for parent, childLayer in blueprint.items():
+        __saveNamedObject(componentClass, hasUsed, parent)
+        for child, childAttrs in childLayer.items():
+            __saveNamedObject(componentClass, hasUsed, child)
+            scaffold.add_edge(hasUsed[parent], hasUsed[child], **childAttrs)
+
+    return scaffold

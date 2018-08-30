@@ -133,7 +133,7 @@ The utility of a primitive action not in view is decided by checking whether its
 
 ## Empirical Evaluation
 
-![MAXQ & Custom Hierarchy](assets/images/Taxi-v2-LR0.1-DF0.999-ER0.1.png)
+![MAXQ & Custom Scheduler](assets/images/Taxi-v2-LR0.1-DF0.999-ER0.1.png)
 
 ## Conclusion
 

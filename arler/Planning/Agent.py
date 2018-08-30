@@ -1,4 +1,4 @@
-class Plan:
+class Strategist:
     def __init__(self, actionModels, annotatedTrajectory, goalPredicate):
         self.actionModels = actionModels
         self.blueprint = annotatedTrajectory

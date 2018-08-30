@@ -9,18 +9,22 @@ import numpy as np
 
 class Agenda:
     def __init__(self, priorities):
-        self.priorities = priorities
-        self.root = findRoot(self.priorities)
+        self.__priorities__ = priorities
+        self.root = findRoot(self.__priorities__)
 
     @property
     def size(self):
-        return len(self.priorities.nodes())
+        return len(self.__priorities__.nodes())
 
     def info(self, task):
-        return self.priorities.nodes()[task]
+        return self.__priorities__.nodes()[task]
 
     def subtasks(self, task):
-        return list(self.priorities.successors(task))
+        return list(self.__priorities__.successors(task))
+
+    def addTo(self, task, *args):
+        edges = [(task, nextTask) for nextTask in args]
+        self.__priorities__.add_edges_from(edges)
 
     def next(self, task, distribution, explorationRate):
         if random.uniform(0, 1) < explorationRate:
@@ -28,11 +32,3 @@ class Agenda:
         else:
             assert len(distribution) == len(self.subtasks(task))
             return self.subtasks(task)[np.argmax(distribution)]
-
-
-class Task:
-    def __init__(self, name, identity=None, isPrimitive=False):
-        self.name = name
-        self.id = identity
-        self.isPrimitive = isPrimitive
-
