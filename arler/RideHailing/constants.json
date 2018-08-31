@@ -58,5 +58,18 @@
         ]
       }
     }
+  },
+  "models": {
+    "PICKUP": {
+      "taxi location": {
+        "reward": {},
+        "taxi location": {},
+        "passenger location": {}
+      },
+      "passenger location": {
+        "reward": {},
+        "passenger location": {}
+      }
+    }
   }
 }

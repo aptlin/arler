@@ -23,13 +23,13 @@ class Action:
         self.id = identity
 
 
-class PrimitiveAction(Action):
+class Primitive(Action):
     def __init__(self, name, identity, model):
         super().__init__(name, identity)
         self.model = model
 
 
-class CompositeAction(Action):
+class Composite(Action):
     def __init__(self, name, identity, models):
         super().__init__(name, identity)
         self.model = ActionModel.merge(models)

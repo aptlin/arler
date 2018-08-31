@@ -2,146 +2,156 @@
 
 > This repo is under active development. If you find any slip-ups or want to contribute, please [let me know](mailto:sasha@sdll.space).
 
+## Installation
+
+To install the development version:
+
+```bash
+git clone https://github.com/sdll/arler
+cd arler
+pip install -e .
+```
+
+## Contents
+
+- [x] Introduction
+- [x] Technical Background
+  - Action Models
+  - Task Hierarchies & Goal Predicates
+  - Causal Analysis & Relevance Annotation
+- [ ] Algorithm
+  - Overview
+  - Task Discovery
+  - Specialisation & Termination
+  - Abstraction
+  - Generalisation
+- [ ] Empirical Evaluation
+- [ ] Conclusion
+
 ## Introduction
 
 Learning through play is a simple and powerful form of making sense of the world. Whether animals or machines, learning agents source information and engage with the environment, both of which can inflict significant costs.
 
-Resource scarcity calls for organised conjuring of effective policies that map situations to actions. Some domains offer obvious quantifiable metrics of successful interaction: scores in games, grades in schools, wages and profits in companies. _Reinforcement learning_ gives a range of methods to maximise the numerical reward.
+Resource scarcity calls for the organised search of effective policies that map situations to actions. Some domains offer obvious quantifiable metrics of successful interaction: scores in games, grades in schools, wages and profits in companies. _Reinforcement learning_ gives a range of methods to maximise the numerical reward.
 
 In a classical setting, no prior knowledge is available to the learner, who must discover optimal policies on their own by trial and error, with immediate or delayed rewards.
 
-The sheer range of options available for discovery is often overwhelming, which mandates _transfer learning_: breaking the problem down into essential components and training the agent in a simpler context, with a promise of cheaper exploration and exploitation of the underlying structure.
+The sheer range of options available for discovery is often overwhelming, which mandates the approach of _transfer learning_: breaking the problem down into essential components and training the agent in a simpler context, with a promise of cheaper exploration and exploitation of domains that share the same invariants.
 
-Invariants of multiple domains might make planning for optimal engagement more efficient, helping us build a hierarchy of routines that narrow down immediate view and speed up the process of learning.
+Building a hierarchy of routines can extract essential information about the domain and speed up the process of learning. The primary focus of this project is to find optimal subroutines automatically.
 
-The primary focus of this project is to find and engage in optimal subroutines automatically.
-
-Following Neville Mehta _et al_ (see [[1]](https://ir.library.oregonstate.edu/downloads/6395wb334), [[2]](https://pdfs.semanticscholar.org/cb3a/ef8917900cea4492899bd1f724bcb5e98b8f.pdf)), we make three assumptions:
+Three assumptions are key:
 
 1. Any sequence of actions that achieves the target goal has a well-defined reason that explains its success.
 2. Hints of causality uncover an optimal task hierarchy.
 3. Hierarchies are more transferrable across domains than flat sequences of actions.
 
-Exploitation of the action models encoding the environmental dynamics allows us to compose a task hierarchy with minimal causal dependencies between distinct tasks. The goal is to produce a meaningful schema to use for any targets with similar causal structures.
-
-The next section describes the technical toolkit used to develop the method. Then we describe the algorithm, benchmark its performance on a toy domain, conclude with the criticism of the general approach and lay out possible improvements.
+The next section describes the technical toolkit used to develop the method. Then we describe the algorithm, benchmark its performance on the [taxi](https://gym.openai.com/envs/Taxi-v2) domain, conclude with the criticism of the general approach and lay out possible improvements.
 
 ## Technical Background
 
-Markov decision processes (MDPs) provide the framework necessary to formalise the problem of sequential decision-making. A set of _states_ of the environment, _actions_ available to the agent, the _transition function_ specifying how each action affect the state, and the _reward function_ representing the feedback to the agent completely determine an MDP.
+Markov decision processes (MDPs) give a framework for modelling sequential decision-making of the _agent_ that operates in the _environment_. Two sets and two maps completely determine the MDP:
 
-The transition and reward functions can behave stochastically: they can change subject to random variations.
+- The set of _environment states_, which depend on _environment variables_
+- The set of _agent actions_
+- The _transition function_ that specifies how each action operates on every state
+- The _reward function_ that gives numerical feedback to the agent
 
-The set of environment states can be _factored_, so that each state has several variables that describe it fully. In case of a helicopter as an agent, for example, its velocity and position can characterise the state of the environment.
+On receiving input from the environment in the form of a state id, the agent either stops or picks the next action, in which case the environment might change to a new state.
 
-Note that MDPs capture the agent-environment interaction in a computationally amicable manner: continual engagement is broken down into discrete time steps, with the agent receiving the information about the environment in the form of a _state_ id, on the basis of which it picks the next action. Each action is assigned a numerical reward, which the agent receives at some point, and the environment transitions to a new state.
+The agent _policy_ (or _strategy_) decides what action to take in each state. The _optimal strategy_ maximises the agent reward. In the case when the number of states and actions is finite, the chosen policy fixes the cumulative reward. This makes computing the _value_ of each state with respect to the policy feasible: dynamic programming is a classic approach. Alas, it suffers from the curse of dimensionality, and breaks down in most domains of interest.
 
-We will consider only finite MDPs, so that the sets of all the possible states, actions and rewards are discrete. In this way we can impose the Markov property on the transition function, describing each step and its reward at a particular point in time as random variables with well-defined discrete probability distributions dependent only on the previous step.
-
-Note that this model is completely defined by the probability function, showing how likely the agent is to find itself in the current state and receive some reward based on its previous behaviour summed up by the state of the environment and taken action.
-
-The agent must choose a policy which determines the action it takes in each state. The main problem which the agent must solve is to find the optimal strategy maximising its reward. Since we consider only finite MDPs, the cumulative reward obtained by the agent is finite and fixed by the chosen policy. This allows us to compute the value of each state with respect to the policy: dynamic programming is a classic approach. Alas, it suffers from the curse of dimensionality, breaking down when the number of states is exponential in the number of state variables, which is characteristic of the real-world domains.
-
-One trick to resolve the issue is to divide and conquer: hierarchical reinforcement learning decomposes the original MDPs into more manageable chunks, solves them one by one and reassembles intermediate results into a single policy.
+One trick to resolve the issue is to divide and conquer: hierarchical reinforcement learning decomposes original MDPs into more manageable chunks, solves them one by one and combines intermediate results into a single policy.
 
 ### Action models
 
-Discovery of task hierarchy in our approach relies on action models easy to store and access.
+Relationships between environment variables are encoded using directed bipartite graphs.
 
-Each action can be described in terms of its effect on the agent and the environment with a _dynamic probability network_, showing how each variable in the current state will influence all the variables in the next, including the effect of each variable on the reward. Conditional probability trees quantify this influence, and describe how likely the assignment of the value is after the action is done. In this way, the Markovian absence of memory comes in handy and allows us to describe action models as bipartite graphs (we assume that no variables affect each other within the action step).
-
-The left half of the graph consists of nodes corresponding to environment variables before the action is executed. The nodes on the right, including a special node for the reward, represent the variables after the action is completed, each containing an inspectable representation of the decision tree, with the respective variables as leaves and parents as internal nodes.
+Nodes on the left are environment variables before the action is executed. Nodes on the right, with one for the reward, are the variables after. Edges signify dependency.
 
 ### Task Hierarchies & Goal Predicates
 
-Successful abstraction of primitive tasks into more complex macros with greater time frames can speed up learning and break down intractable planning problems into manageable subtasks.
+Task hierarchies need a tractable and lightweight representation, and the MAXQ graph provides one of them (see [[4]](https://pdfs.semanticscholar.org/fdc7/c1e10d935e4b648a32938f13368906864ab3.pdf) for details).
 
-Task hierarchies need a tractable and lightweight representation, and the MAXQ framework provides one of them (see [[4]](https://pdfs.semanticscholar.org/fdc7/c1e10d935e4b648a32938f13368906864ab3.pdf) for details).
-
-In the MAXQ framework, the task-subtask relationships are represented as a directed acyclic graph. Leaves of this task graph correspond to primitive actions, while internal nodes correspond to composite tasks, each of which has the termination predicate describing what goal to achieve and what conditions it needs to succeed, as well as the set of environment variables to track.
+In this framework, a directed acyclic graph captures task-subtask relationships. Primitive actions are the leaves, and composite tasks are internal nodes, each of which has the goal to achieve, expressed as the termination predicate, the conditions it needs to succeed, and the set of tracked environment variables.
 
 ### Causal Analysis & Relevance Annotation
 
-Activity models give the opportunity to add information to a successful trajectory of states and activities which then the algorithm can use to build a hierarchy. Thus, for each action we can identify _relevant_ agent and environment variables by considering whether the execution of the action requires their testing or changing in the context. You can see whether some variable is tested or changed by considering how the corresponding conditional probability distribution is changed. If the probability that the variable will conserve its value after the action is completed is less than one, then the variable is context-changed. If the variable is checked to get a reward or the action model shows that this variable is related to some other context-changed variable, then this variable is context-tested.
+Activity models, combined with a successful trajectory of states and tasks, serve as raw materials for constructing a hierarchy.
 
-Using this vocabulary, we say that a variable is relevant to some action if it is context-changed or context-tested.
+Environment variables are _relevant_ to some action if at least one of the following conditions holds:
 
-Let's label a given successful trajectory as follows: we add an edge between two actions if some variable is relevant to both but to no actions in between. The direction of the edge is determined by the precedence of one action over another.
+- there is a non-zero chance that the variable changes its value after the action is completed
+- the variable is important for getting the reward
 
-Call such edges relevant. The corresponding _relevantly annotated trajectory_ (RAT for short) is a directed graph of actions from the original trajectory as nodes connected by all the relevant edges, with cycles and failed actions removed.
+To obtain a _relevantly annotated trajectory_ (RAT) from the original sequence, remove cycles and add an edge between any pair of actions that share a relevant variable (but no actions in between do), and set its direction in line with the chronological precedence.
 
-Partitioning a RAT, you will get a hierarchy to feed into MAXQ.
+The learning process consists of partitioninig a RAT and feeding it into MAXQ.
 
 ## Algorithm
 
 ### Overview
 
-We use the algorithm of hierarchy induction via models and trajectories (HI-MAT) to partition a RAT into candidate subtasks, given DBN action models and the MDP target goal as input.
+The algorithm of hierarchy induction via models and trajectories (HI-MAT) builds a hierarchy by inferring subroutines from the RAT, target goal and action models.
 
-The algorithm proceeds backwards from the target goal. Processing each subgoal through the lens of action models, it parses preconditions and derives RAT segments of smaller size, merges them conditionally and recurses deeper down. The base case assumes a singleton RAT segment. The algorithm terminates when the RAT is a single action or a collection of action blocks with identical termination conditions and children, in which case resolution of any higher degree is assumed to lead to no new information-rich abstractions.
+First, the algorithm parses the target goal. Processing each subgoal through the lens of action models, it derives preconditions and constructs RAT segments of smaller size, merges them conditionally and recurses deeper down. The algorithm terminates when the RAT is a single action or a collection of action blocks with identical termination conditions and children.
 
-| Input          | Output                            |
-| -------------- | --------------------------------- |
-| action models  | Root action of the task hierarchy |
+| Input          | Output         |
+| -------------- | -------------- |
+| action models  | hierarchy root |
 | RAT            |
 | goal predicate |
 
-| HI-MAT                                                                                                                                                                                                                                                                                    |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Base Case**                                                                                                                                                                                                                                                                             |
-| If the trajectory consists of a single action, then this action is the root node. The only relevant environment variables are the variables relevant to this action.                                                                                                                      |
-| If, on the other hand, actions in the trajectory have identical relevance, then bundle them together under the root node with the given goal predicate as termination condition and set relevant variables to the combination of relevant variables from the action models and predicate. |
-| **Recursive Step**                                                                                                                                                                                                                                                                        |
-| If neither of the conditions above holds, partition the RAT into segments by figuring out the largest subgraph containing only the relevant variables inside.                                                                                                                             |
-| If some segment coincides with the entire trajectory, split it in two, separating the ultimate action from the rest.                                                                                                                                                                      |
-| Merge all overlapping segments into one.                                                                                                                                                                                                                                                  |
-| Invoke the algorithm recursively on each segment, and add the result to the returned root node.                                                                                                                                                                                           |
-| Set the termination condition for the root node to the goal predicate.                                                                                                                                                                                                                    |
-| Merge models of the actions present in the trajectory to make the composite model of the returned task.                                                                                                                                                                                   |
-| Add every primitive action with the model isomorphic to the subgraph of the composite model built in the previous step as a child of the returned task.                                                                                                                                   |
-| Return the root node.                                                                                                                                                                                                                                                                     |
+| HI-MAT                                                                                                                                                                                                                                                                                                  |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Base Case**                                                                                                                                                                                                                                                                                           |
+| If the trajectory consists of a single action, then set this action as the only child of the root node. The only tracked environment variables are the variables relevant to this action.                                                                                                               |
+| If, on the other hand, actions in the trajectory have identical relevance, then bundle them together under the root node, with the goal predicate as the termination condition, and set tracked variables to the union of relevant variables from action models and variables comprising the predicate. |
+| **Recursive Step**                                                                                                                                                                                                                                                                                      |
+| If neither of the conditions above holds, partition the RAT into segments by figuring out the largest subgraph achieving the target goal and including all the necessary and sufficient causal links.                                                                                                   |
+| If some segment coincides with the entire trajectory, split it in two, separating the ultimate action from the rest.                                                                                                                                                                                    |
+| If any two segments overlap, merge them into one, sticking together the target goals they achieve.                                                                                                                                                                                                      |
+| Invoke the algorithm recursively on each segment, and add the result to the root node returned.                                                                                                                                                                                                         |
+| Set the termination condition for the root node to the goal predicate.                                                                                                                                                                                                                                  |
+| Make the composite model of the returned task by merging the subroutine models.                                                                                                                                                                                                                         |
+| If any primitive action has the model isomorphic to the subgraph of the composite model, add it as a child.                                                                                                                                                                                             |
+| Return the root node.                                                                                                                                                                                                                                                                                   |
 
 ### Task Discovery
 
-The target predicate gives the initial set of variables to consider: the _goal set_. The algorithm looks at each literal inside and follows corresponding edges to determine segment boundaries using a simple iterative rule.
+The algorithm first parses the target predicate and determines the initial set of variables to consider: the _goal set_. Then it looks at each literal inside and follows adjacent edges from the RAT to find segment boundaries using a simple iterative rule.
 
-If this segment is neither the state it has started with nor the entire trajectory, all the literals entering the segment are added to the goal set. We do this check in order to prevent redundancy.
+If this segment is neither the state it has started with nor the entire trajectory, all the literals that enter the segment are added to the goal set.
 
-If, however, it coincides with the entire trajectory, the ultimate action affects only one literal, so the algorithm splits the RAT in two: the first part includes parents of the ultimate action together with its preconditions (which determine the goal predicate of the segment), while the second contains only the ultimate action.
+If, however, it coincides with the entire trajectory, the algorithm splits the RAT in two: the first part contains parents of the ultimate action together with its preconditions (which determine the goal predicate of the segment), while the second contains only the ultimate action.
 
-The algorithm then goes on scanning until it accounts for all of the subgoal relevant variables, generating structured batches of sequential actions to feed into the MAXQ learning procedure.
+The algorithm then goes on scanning until it accounts for all of the variables relevant to the subgoal, generating structured batches of sequential actions that are then tied together under the root node.
 
 ### Specialisation & Termination
 
-A set of tasks combined with the termination condition define a composite task. The subtasks are determined by the next recursive call of the algorithm, while the termination condition is built from the predicate corresponding to the segment and the action model by picking out matching variables.
+Recursive calls build layers of the MAXQ hierarchy, and the composite action at the root of each subtree. A subroutine is thus defined by the child tasks and the termination condition that the subtree achieves. This termination condition is just a conjunction of appropriate variables (relevant to the subtasks and present in the target goal that the segment achieves).
 
 ### Abstraction
 
-The algorithm attempts to find the smallest number of relevant environment variables corresponding to each task in order to speed up the learning process. The heuristic used to achieve this is as follows.
+Redundant environment variables slow down the process of learning, so the algorithm is designed to be thrifty.
 
-First, we construct a composite action model by merging the DBNs of primitive actions contained in the corresponding RAT segment. This gives us the composite DBN of any task that combines these primitives.
+First, to construct the composite action model of the subtask, the algorithm merges models of primitive actions that the segment contains.
 
-Secondly, we take the union of the set of relevant variables associated with the merged DBN and the set of variables comprising the termination predicate.
+Secondly, the algorithm constructs the set of variables relevant to the subroutine by taking the union of the relevant variables from the merged action models and the variables used in the termination predicate.
 
-Finally, if some of the variables involved in the relational termination condition of the task were left out, we add them as well. This, in effect, parametrises the task and makes it dependent on the context encoded in the current state.
+Finally, the algorithm accounts for the variables from the termination condition that have not been added yet. This, in effect, parametrises the task and linkss it to the context of the current state.
 
 ### Generalisation
 
-Since the algorithm works with a single successful trajectory which might encode only a limited amount of information about the environment, in order to maximise the quality of transfer it verifies that all the useful primitive actions have been incorporated in the resultant hierarchy.
+Since the algorithm works with a single successful trajectory, the information about the environment it extracts is likely to be incomplete, so to maximise the quality of transfer it verifies that all the useful primitive actions have been incorporated in the resultant hierarchy.
 
-The utility of a primitive action not in view is decided by checking whether its DBN is a subgraph of the merged DBN associated with primitive actions already in use. This heuristic is based on the assumption that unobserved primitives with familiar structures achieve the same goal as the primitive children of the task.
+The utility of a primitive action not in view is decided by checking whether its model is a subgraph of the composite model associated with primitive actions already in use. This heuristic is based on the assumption that unobserved primitives with familiar structures achieve the same goal as the primitive children of the task.
 
 ## Empirical Evaluation
 
 ![MAXQ & Custom Scheduler](assets/images/Taxi-v2-LR0.1-DF0.999-ER0.1.png)
 
 ## Conclusion
-
-Suppose that our agent has simultaneous objectives. A taxi cab, for example, should pick up, move to the proper destination and drop off the passenger.
-
-Some combination of primary actions (go north, west, south, east, pick up, drop off) will achieve this.
-
-Such tasks target a known conjunctive goal: there is a non-empty set of goals states, and the agent must reach them in the shortest period of time.
 
 ## References
 
