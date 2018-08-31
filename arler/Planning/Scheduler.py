@@ -22,8 +22,8 @@ class Agenda:
     def subtasks(self, task):
         return list(self.__priorities__.successors(task))
 
-    def addTo(self, task, *args):
-        edges = [(task, nextTask) for nextTask in args]
+    def addTo(self, parent, *args):
+        edges = [(parent, child) for child in args]
         self.__priorities__.add_edges_from(edges)
 
     def next(self, task, distribution, explorationRate):

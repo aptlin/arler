@@ -1,5 +1,5 @@
 from arler.Planning.Scheduler import Agenda
-from arler.Working.Actor import Action
+from arler.Working.Agent import Action
 from arler.RideHailing.Director import Configuration
 from arler.Utilities.build import buildPriorities
 

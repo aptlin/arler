@@ -1,3 +1,6 @@
+import itertools
+
+
 def findRoot(digraph):
     candidates = [node for node in digraph if digraph.in_degree(node) == 0]
 
@@ -9,3 +12,6 @@ def findRoot(digraph):
 
     return candidates.pop()
 
+
+def mergeLists(*args):
+    return itertools.chain.from_iterable(args)

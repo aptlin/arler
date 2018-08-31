@@ -3,7 +3,7 @@ from collections import defaultdict
 import networkx as nx
 
 
-def __saveNamedObject(ObjectClass, memory, objectName):
+def __saveNamedObject__(ObjectClass, memory, objectName):
     if objectName not in memory:
         memory[objectName] = ObjectClass(objectName)
 
@@ -18,9 +18,9 @@ def buildPriorities(blueprint, Task):
     primitiveIds = set()
     while flattenedBlueprint:
         parent, childLayer = flattenedBlueprint.pop()
-        __saveNamedObject(Task, taskMemory, parent)
+        __saveNamedObject__(Task, taskMemory, parent)
         for child, grandchildLayer in childLayer.items():
-            __saveNamedObject(Task, taskMemory, child)
+            __saveNamedObject__(Task, taskMemory, child)
             if isinstance(grandchildLayer, Mapping):
                 flattenedBlueprint.append((child, grandchildLayer))
             else:
@@ -39,9 +39,9 @@ def buildScaffold(blueprint, componentClass):
     hasUsed = dict()
     scaffold = nx.DiGraph()
     for parent, childLayer in blueprint.items():
-        __saveNamedObject(componentClass, hasUsed, parent)
+        __saveNamedObject__(componentClass, hasUsed, parent)
         for child, childAttrs in childLayer.items():
-            __saveNamedObject(componentClass, hasUsed, child)
+            __saveNamedObject__(componentClass, hasUsed, child)
             scaffold.add_edge(hasUsed[parent], hasUsed[child], **childAttrs)
 
     return scaffold

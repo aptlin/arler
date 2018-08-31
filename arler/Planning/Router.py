@@ -12,7 +12,7 @@ class Trajectory:
         return len(self.__scaffold__) - 2
 
     def getSharedContextBetween(self, parent, child):
-        return self.__scaffold__[parent][child]
+        return self.__scaffold__[parent][child]["variables"]
 
-    def isRelevanceIdentical(self, *args)
+    def haveIdenticalRelevance(self, *args):
         pass
