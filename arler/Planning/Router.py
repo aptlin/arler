@@ -1,11 +1,11 @@
 import networkx as nx
 from arler.Planning.Environment import Variable
-from arler.Utilities.build import buildScaffold
+from arler.Utilities.build import buildTrajectoryScaffold
 
 
 class Trajectory:
     def __init__(self, blueprint):
-        self.__scaffold__ = buildScaffold(blueprint, Variable)
+        self.__scaffold__ = buildTrajectoryScaffold(blueprint, Variable)
 
     @property
     def size(self):

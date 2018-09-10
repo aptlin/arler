@@ -1,10 +1,10 @@
 from arler.Planning.Scheduler import Agenda
-from arler.Working.Agent import Action
+from arler.Working.Agent import PrimitiveAction, CompositeAction
 from arler.RideHailing.Director import Configuration
 from arler.Utilities.build import buildPriorities
 
 
-class TaxiOrder(Action):
+class TaxiOrder(CompositeAction):
     def isGetting(self):
         return self.name == "GET"
 
@@ -17,7 +17,7 @@ class Instructions(Agenda):
         self.domain = env
         config = Configuration()
         self.corners = config.constants["corners"]
-        super().__init__(buildPriorities(hierarchy, TaxiOrder))
+        super().__init__(buildPriorities(hierarchy, PrimitiveAction, TaxiOrder))
 
     def position(self):
         data = list(self.domain.decode(self.domain.s))

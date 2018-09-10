@@ -12,11 +12,12 @@
     }
   },
   "corners": {
-    "GOTO_R": [0, 0],
-    "GOTO_G": [0, 4],
-    "GOTO_Y": [4, 0],
-    "GOTO_B": [4, 3]
+    "GO_TO_PASSENGER_AT_R": [0, 0],
+    "GO_TO_PASSENGER_AT_G": [0, 4],
+    "GO_TO_PASSENGER_AT_B": [4, 0],
+    "GO_TO_PASSENGER_AT_Y": [4, 3]
   },
+  "terminatiorConditions": {},
   "trajectory": {
     "START": {
       "GO_TO_PASSENGER_AT_R": { "variables": ["taxi location"] },

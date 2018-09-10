@@ -27,17 +27,17 @@ class Configuration:
             "ROOT": {
                 "GET": {
                     "PICKUP": pickup,
-                    "GOTO_R": goto,
-                    "GOTO_G": goto,
-                    "GOTO_B": goto,
-                    "GOTO_Y": goto,
+                    "GO_TO_PASSENGER_AT_R": goto,
+                    "GO_TO_PASSENGER_AT_G": goto,
+                    "GO_TO_PASSENGER_AT_B": goto,
+                    "GO_TO_PASSENGER_AT_Y": goto,
                 },
                 "PUT": {
                     "DROPOFF": dropoff,
-                    "GOTO_R": goto,
-                    "GOTO_G": goto,
-                    "GOTO_B": goto,
-                    "GOTO_Y": goto,
+                    "GO_TO_PASSENGER_AT_R": goto,
+                    "GO_TO_PASSENGER_AT_G": goto,
+                    "GO_TO_PASSENGER_AT_B": goto,
+                    "GO_TO_PASSENGER_AT_Y": goto,
                 },
             }
         }

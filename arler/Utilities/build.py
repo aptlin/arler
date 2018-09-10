@@ -8,7 +8,7 @@ def __saveNamedObject__(ObjectClass, memory, objectName):
         memory[objectName] = ObjectClass(objectName)
 
 
-def buildPriorities(blueprint, Task):
+def buildPriorities(blueprint, PrimitiveTask, CompositeTask):
     if len(blueprint) != 1:
         raise ValueError("The hierarchy given is not a rooted tree.")
 
@@ -18,30 +18,30 @@ def buildPriorities(blueprint, Task):
     primitiveIds = set()
     while flattenedBlueprint:
         parent, childLayer = flattenedBlueprint.pop()
-        __saveNamedObject__(Task, taskMemory, parent)
+        __saveNamedObject__(CompositeTask, taskMemory, parent)
         for child, grandchildLayer in childLayer.items():
-            __saveNamedObject__(Task, taskMemory, child)
             if isinstance(grandchildLayer, Mapping):
+                __saveNamedObject__(CompositeTask, taskMemory, child)
                 flattenedBlueprint.append((child, grandchildLayer))
             else:
+                __saveNamedObject__(PrimitiveTask, taskMemory, child)
                 taskMemory[child].id = grandchildLayer
-                taskMemory[child].isPrimitive = True
                 primitiveIds.add(grandchildLayer)
             hierarchy.add_edge(taskMemory[parent], taskMemory[child])
     availableIds = set(range(len(hierarchy))) - primitiveIds
     for node in hierarchy.nodes():
-        if node.id is None:
+        if isinstance(node, CompositeTask):
             node.id = availableIds.pop()
     return hierarchy
 
 
-def buildScaffold(blueprint, componentClass):
-    hasUsed = dict()
+def buildTrajectoryScaffold(blueprint, primitiveAction):
+    taskMemory = dict()
     scaffold = nx.DiGraph()
     for parent, childLayer in blueprint.items():
-        __saveNamedObject__(componentClass, hasUsed, parent)
+        __saveNamedObject__(primitiveAction, taskMemory, parent)
         for child, childAttrs in childLayer.items():
-            __saveNamedObject__(componentClass, hasUsed, child)
-            scaffold.add_edge(hasUsed[parent], hasUsed[child], **childAttrs)
+            __saveNamedObject__(primitiveAction, taskMemory, child)
+            scaffold.add_edge(taskMemory[parent], taskMemory[child], **childAttrs)
 
     return scaffold
