@@ -31,7 +31,7 @@ class Taxi(Learner):
     def step(self, task):
         if not task.isPrimitive:
             raise ValueError("Not a primitive action, aborting.")
-        _, reward, self.done, _ = self.domain.step(task.id)
+        _, reward, self.done, _ = self.domain.step(task.identity)
         self.score += reward
         return reward
 
@@ -46,7 +46,7 @@ class Taxi(Learner):
     def isTerminal(self, task):
         if self.done or task.isPrimitive:
             return True
-        elif task.id == self.agenda.root.id:
+        elif task.identity == self.agenda.root.identity:
             return self.done
         elif task.isGetting():
             return self.loaded
@@ -56,7 +56,7 @@ class Taxi(Learner):
             return self.agenda.hasArrived(task)
 
     def isBeneficial(self, task):
-        if task.id == self.agenda.root.id:
+        if task.identity == self.agenda.root.identity:
             return not self.done
         elif task.isPrimitive:
             return True

@@ -40,27 +40,29 @@ class Learner(ABC):
 
     def computeReward(self, task, state):
         if task.isPrimitive:
-            return self.completionCost[task.id][state]
+            return self.completionCost[task.identity][state]
         else:
             return max(self.taskCompositeRewards(task, state))
 
     def computeCompositeReward(self, task, state, nextTask):
         return (
             self.computeReward(nextTask, state)
-            + self.discountedCompletionCost[task.id][state][nextTask.id]
+            + self.discountedCompletionCost[task.identity][state][nextTask.identity]
         )
 
     def alphaUpdate(self, value, alpha, reward):
         return value + alpha * (reward - value)
 
     def updateCompletionCostsWith(self, reward, task, state):
-        self.completionCost[task.id][state] = self.alphaUpdate(
-            self.completionCost[task.id][state], self.learningRate, reward
+        self.completionCost[task.identity][state] = self.alphaUpdate(
+            self.completionCost[task.identity][state], self.learningRate, reward
         )
 
     def updateDiscountedCompletionCostsWith(self, reward, task, state, nextTask):
-        self.discountedCompletionCost[task.id][state][nextTask.id] = self.alphaUpdate(
-            self.discountedCompletionCost[task.id][state][nextTask.id],
+        self.discountedCompletionCost[task.identity][state][
+            nextTask.identity
+        ] = self.alphaUpdate(
+            self.discountedCompletionCost[task.identity][state][nextTask.identity],
             self.learningRate,
             reward,
         )

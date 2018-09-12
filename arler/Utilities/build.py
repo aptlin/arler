@@ -25,13 +25,13 @@ def buildPriorities(blueprint, PrimitiveTask, CompositeTask):
                 flattenedBlueprint.append((child, grandchildLayer))
             else:
                 __saveNamedObject__(PrimitiveTask, taskMemory, child)
-                taskMemory[child].id = grandchildLayer
+                taskMemory[child].identity = grandchildLayer
                 primitiveIds.add(grandchildLayer)
             hierarchy.add_edge(taskMemory[parent], taskMemory[child])
     availableIds = set(range(len(hierarchy))) - primitiveIds
     for node in hierarchy.nodes():
         if isinstance(node, CompositeTask):
-            node.id = availableIds.pop()
+            node.identity = availableIds.pop()
     return hierarchy
 
 

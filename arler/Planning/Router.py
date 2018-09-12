@@ -1,5 +1,5 @@
 import networkx as nx
-from arler.Planning.Environment import Variable
+from arler.Thinking.Agent import Variable
 from arler.Utilities.build import buildTrajectoryScaffold
 
 

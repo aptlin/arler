@@ -1,4 +1,5 @@
 import networkx as nx
+from arler.Thinking.Agent import Condition
 from arler.Utilities.operate import mergeLists
 
 
@@ -21,13 +22,27 @@ class ActionModel:
 class Action:
     def __init__(self, name, identity=None):
         self.name = name
-        self.id = identity
-        self.terminationCondition = set()
-        self.benefitCondition = set()
+        self.identity = identity
+        self.terminationCondition = Condition()
+        self.benefitCondition = Condition()
 
     @property
     def isPrimitive(self):
         return isinstance(self, PrimitiveAction)
+
+    @property
+    def isTerminal(self):
+        return bool(self.terminationCondition)
+
+    @property
+    def isBeneficial(self):
+        return bool(self.benefitCondition)
+
+    def setTerminationCondition(self, variables=set()):
+        self.terminationCondition = Condition(variables)
+
+    def setBenefitCondition(self, variables=set()):
+        self.benefitCondition = Condition(variables)
 
 
 class PrimitiveAction(Action):
