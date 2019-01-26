@@ -1,6 +1,6 @@
 # Arler: Toy Explorer of Hierarchical Reinforcement Learning
 
-> This repo is under active development. If you find any slip-ups or want to contribute, please [let me know](mailto:sasha@sdll.space).
+> This repo is still rough on the edges. If you find any slip-ups or want to contribute, please [let me know](mailto:sasha@sdll.space).
 
 ## Installation
 
