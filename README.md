@@ -1,4 +1,4 @@
-# Arler: Toy Explorer of Hierarchical Reinforcement Learning
+# Arler: inducing task hierarchies via models and trajectories
 
 > This repo is still rough on the edges. If you find any slip-ups or want to contribute, please [let me know](mailto:sasha@sdll.space).
 
